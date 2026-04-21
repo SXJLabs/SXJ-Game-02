@@ -35,10 +35,10 @@ canvas {
   max-width: 400px;
 }
 
-/* CONTROLS */
+/* JUMP BUTTON */
 #jumpBtn {
   position: fixed;
-  bottom: 40px;
+  bottom: calc(25px + env(safe-area-inset-bottom));
   left: 20px;
   padding: 18px;
   font-size: 18px;
@@ -48,9 +48,10 @@ canvas {
   z-index: 20;
 }
 
+/* SHIELD BUTTON */
 #shieldBtn {
   position: fixed;
-  bottom: 40px;
+  bottom: calc(25px + env(safe-area-inset-bottom));
   right: 20px;
   padding: 18px;
   font-size: 18px;
@@ -60,19 +61,19 @@ canvas {
   z-index: 20;
 }
 
-/* START BUTTON (GAME OVER ONLY) */
+/* START BUTTON */
 #startBtn {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  padding: 20px 30px;
-  font-size: 20px;
+  padding: 22px 32px;
+  font-size: 22px;
   border-radius: 12px;
   background: white;
   color: black;
   display: none;
-  z-index: 30;
+  z-index: 100;
 }
 </style>
 </head>
@@ -88,7 +89,6 @@ canvas {
 
 <button id="jumpBtn" onclick="jump()">JUMP</button>
 <button id="shieldBtn" onclick="toggleShield()">SHIELD</button>
-
 <button id="startBtn" onclick="startGame()">START</button>
 
 <script>
@@ -106,7 +106,7 @@ let shieldActive = false;
 
 const pattern = ["spike", "enemy", "enemy", "spike"];
 
-// START GAME
+// ---------------- START GAME ----------------
 function startGame() {
   player = {
     x: 50,
@@ -121,14 +121,16 @@ function startGame() {
   bullets = [];
 
   score = 0;
-  running = true;
-
   timer = 0;
   patternIndex = 0;
+
+  running = true;
   shieldActive = false;
 
+  document.getElementById("score").innerText = "0";
   document.getElementById("startBtn").style.display = "none";
 
+  // stars reset
   stars = [];
   for (let i = 0; i < 60; i++) {
     stars.push({
@@ -139,21 +141,23 @@ function startGame() {
   }
 }
 
-// CONTROLS
+// ---------------- CONTROLS ----------------
 function jump() {
-  if (running && !player.jumping) {
+  if (!running) return;
+  if (!player.jumping) {
     player.vy = -12;
     player.jumping = true;
   }
 }
 
 function toggleShield() {
+  if (!running) return;
   if (player.shieldMeter > 0) {
     shieldActive = !shieldActive;
   }
 }
 
-// STARS
+// ---------------- STARS ----------------
 function drawStars() {
   ctx.fillStyle = "white";
   for (let s of stars) {
@@ -163,7 +167,14 @@ function drawStars() {
   ctx.globalAlpha = 1;
 }
 
-// GAME LOOP
+// ---------------- GAME OVER ----------------
+function gameOver() {
+  running = false;
+  shieldActive = false;
+  document.getElementById("startBtn").style.display = "block";
+}
+
+// ---------------- LOOP ----------------
 function loop() {
   ctx.clearRect(0, 0, 400, 500);
 
@@ -298,7 +309,7 @@ function loop() {
     ctx.font = "bold 14px Arial";
     ctx.fillText("SXJ", player.x + 5, player.y + 20);
 
-    // shield effect
+    // shield glow
     if (shieldActive) {
       ctx.strokeStyle = "cyan";
       ctx.lineWidth = 3;
@@ -320,12 +331,6 @@ function loop() {
   }
 
   requestAnimationFrame(loop);
-}
-
-// GAME OVER FUNCTION
-function gameOver() {
-  running = false;
-  document.getElementById("startBtn").style.display = "block";
 }
 
 startGame();
