@@ -62,7 +62,6 @@ document.addEventListener("touchstart", jump);
 
 function drawSpike(x, y) {
   ctx.fillStyle = "red";
-
   ctx.beginPath();
   ctx.moveTo(x, y + 30);
   ctx.lineTo(x + 15, y);
@@ -88,28 +87,28 @@ function loop() {
       player.jumping = false;
     }
 
-    // 🟢 EASY SPAWN (one after another, not spam)
-    if (frame % 160 === 0) {
+    // 🔥 MUCH LESS FREQUENT SPIKES
+    if (frame % 180 === 0) {
       obstacles.push({ x: 400 });
     }
 
-    // player
-    ctx.fillStyle = "#00bcd4";
+    // PLAYER (RED BOX)
+    ctx.fillStyle = "red";
     ctx.fillRect(player.x, player.y, 30, 30);
 
-    // FIXED SXJ TEXT (always visible now)
+    // SXJ TEXT (WHITE, FIXED)
     ctx.fillStyle = "white";
     ctx.font = "bold 14px Arial";
-    ctx.fillText("SXJ", player.x + 4, player.y + 20);
+    ctx.fillText("SXJ", player.x + 5, player.y + 20);
 
-    // spikes instead of boxes
+    // SPIKES
     for (let i = 0; i < obstacles.length; i++) {
       let o = obstacles[i];
-      o.x -= 3; // slower = easier
+      o.x -= 3;
 
       drawSpike(o.x, 400);
 
-      // collision (fair hitbox for spike)
+      // collision (fair spike hitbox)
       if (
         o.x < player.x + 25 &&
         o.x + 25 > player.x &&
