@@ -25,7 +25,6 @@
       padding: 12px 20px;
       font-size: 18px;
       margin-top: 10px;
-      cursor: pointer;
     }
   </style>
 </head>
@@ -41,23 +40,18 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-let player, obstacles, score, running;
+let player, obstacles, score, running, frame;
 
 function startGame() {
-  player = {
-    x: 50,
-    y: 400,
-    vy: 0,
-    jumping: false
-  };
-
+  player = { x: 50, y: 400, vy: 0, jumping: false };
   obstacles = [];
   score = 0;
+  frame = 0;
   running = true;
 }
 
 function jump() {
-  if (player && !player.jumping && running) {
+  if (running && player && !player.jumping) {
     player.vy = -12;
     player.jumping = true;
   }
@@ -71,6 +65,8 @@ function loop() {
 
   if (running && player) {
 
+    frame++;
+
     // gravity
     player.vy += 0.6;
     player.y += player.vy;
@@ -81,33 +77,34 @@ function loop() {
       player.jumping = false;
     }
 
-    // easier obstacle spawn (IMPORTANT)
-    if (Math.random() < 0.008) {
+    // 🔥 MUCH EASIER OBSTACLES (FIXED)
+    if (frame % 140 === 0) {
       obstacles.push({ x: 400 });
     }
 
-    // draw player (SXJ CHARACTER)
+    // player box
     ctx.fillStyle = "#00bcd4";
     ctx.fillRect(player.x, player.y, 30, 30);
 
+    // SXJ text FIXED (centered properly)
     ctx.fillStyle = "black";
-    ctx.font = "bold 14px Arial";
-    ctx.fillText("SXJ", player.x + 4, player.y + 20);
+    ctx.font = "bold 12px Arial";
+    ctx.fillText("SXJ", player.x + 5, player.y + 20);
 
     // obstacles
     ctx.fillStyle = "red";
 
     for (let i = 0; i < obstacles.length; i++) {
       let o = obstacles[i];
-      o.x -= 4;
+      o.x -= 3.5; // slower = easier gameplay
 
       ctx.fillRect(o.x, 400, 30, 30);
 
-      // collision
+      // collision (slightly forgiving)
       if (
-        o.x < player.x + 30 &&
-        o.x + 30 > player.x &&
-        player.y + 30 > 370
+        o.x < player.x + 28 &&
+        o.x + 28 > player.x &&
+        player.y > 370
       ) {
         running = false;
       }
@@ -122,7 +119,7 @@ function loop() {
   } else {
     ctx.fillStyle = "white";
     ctx.font = "30px Arial";
-    ctx.fillText("GAME OVER", 120, 250);
+    ctx.fillText("GAME OVER", 110, 250);
   }
 
   requestAnimationFrame(loop);
