@@ -10,6 +10,8 @@ body {
   background: black;
   font-family: Arial;
   color: white;
+  overflow: hidden;
+  touch-action: none;
 }
 
 /* TOP BAR */
@@ -29,29 +31,31 @@ canvas {
   display: block;
   margin: 60px auto 0 auto;
   border: 2px solid white;
-  background: black;
+  width: 100vw;
+  max-width: 400px;
+  height: auto;
 }
 
 /* CONTROLS */
 #controls {
   position: fixed;
-  bottom: 15px;
+  bottom: 35px;
   width: 100%;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
   z-index: 20;
+  flex-wrap: wrap;
 }
 
 button {
-  padding: 12px 14px;
-  margin: 5px;
-  font-size: 16px;
+  padding: 16px 18px;
+  font-size: 18px;
   border: none;
-  border-radius: 8px;
-  background: #222;
+  border-radius: 14px;
+  background: rgba(40,40,40,0.9);
   color: white;
-}
-button:active {
-  background: #444;
+  min-width: 70px;
 }
 </style>
 </head>
@@ -88,7 +92,7 @@ let shieldActive = false;
 // pattern system
 const pattern = ["spike", "enemy", "enemy", "spike"];
 
-// START
+// START GAME
 function startGame() {
   player = {
     x: 50,
@@ -101,12 +105,14 @@ function startGame() {
   spikes = [];
   enemies = [];
   bullets = [];
+
   score = 0;
   running = true;
 
   timer = 0;
   patternIndex = 0;
 
+  // stars
   stars = [];
   for (let i = 0; i < 60; i++) {
     stars.push({
@@ -139,7 +145,7 @@ function toggleShield() {
   }
 }
 
-// DRAW HELPERS
+// STARS
 function drawStars() {
   ctx.fillStyle = "white";
   for (let s of stars) {
@@ -149,15 +155,15 @@ function drawStars() {
   ctx.globalAlpha = 1;
 }
 
-// LOOP
+// GAME LOOP
 function loop() {
   ctx.clearRect(0, 0, 400, 500);
 
-  if (running) {
+  if (running && player) {
 
     drawStars();
 
-    // GRAVITY
+    // gravity
     player.vy += 0.6;
     player.y += player.vy;
 
@@ -167,7 +173,7 @@ function loop() {
       player.jumping = false;
     }
 
-    // SHIELD SYSTEM
+    // shield system
     if (shieldActive) {
       player.shieldMeter -= 0.6;
       if (player.shieldMeter <= 0) {
@@ -179,7 +185,7 @@ function loop() {
       if (player.shieldMeter > 100) player.shieldMeter = 100;
     }
 
-    // SPAWN SYSTEM (CONTROLLED)
+    // spawn system
     timer++;
     if (timer > 150) {
 
@@ -232,7 +238,7 @@ function loop() {
       ctx.font = "10px Arial";
       ctx.fillText(e.name, e.x + 3, 418);
 
-      // SHAAN SHOOTS
+      // SHAAN shoots only
       if (e.name === "SHAAN") {
         e.shoot++;
         if (e.shoot > 90) {
