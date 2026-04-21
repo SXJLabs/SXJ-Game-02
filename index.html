@@ -2,27 +2,21 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SXJ Space Runner</title>
+<title>SXJ Runner</title>
 
 <style>
 body {
   margin: 0;
   background: black;
-  font-family: Arial;
   color: white;
+  font-family: Arial;
 }
 
 #topbar {
   display: flex;
   justify-content: space-between;
   padding: 10px;
-  background: #0a0a0a;
-  border-bottom: 1px solid #333;
-}
-
-#title {
-  color: cyan;
-  font-weight: bold;
+  background: #111;
 }
 
 canvas {
@@ -42,26 +36,26 @@ button {
 <body>
 
 <div id="topbar">
-  <div id="title">SXJ RUNNER</div>
+  <div>SXJ RUNNER</div>
   <div>Score: <span id="score">0</span></div>
 </div>
 
 <button onclick="startGame()">Start Game</button>
-
 <canvas id="game" width="400" height="500"></canvas>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-let player, spikes, enemies, bullets, stars;
+let player, spikes, enemies, bullets;
 let score, running;
 
-// ✅ GUARANTEED SPAWN TIMER
-let enemyTimer = 0;
-let spikeTimer = 0;
+let spawnTimer = 0;
+let patternIndex = 0;
 
-// 🚀 START
+// 🔁 FIXED PATTERN
+const pattern = ["spike", "enemy", "enemy", "spike"];
+
 function startGame() {
   player = { x: 50, y: 400, vy: 0, jumping: false };
 
@@ -69,77 +63,28 @@ function startGame() {
   enemies = [];
   bullets = [];
 
-  enemyTimer = 0;
-  spikeTimer = 0;
-
   score = 0;
   running = true;
 
-  // stars
-  stars = [];
-  for (let i = 0; i < 60; i++) {
-    stars.push({
-      x: Math.random() * 400,
-      y: Math.random() * 500,
-      size: Math.random() * 2
-    });
-  }
+  spawnTimer = 0;
+  patternIndex = 0;
 }
 
 // 🦘 JUMP
 function jump() {
-  if (running && !player.jumping) {
+  if (!player.jumping) {
     player.vy = -12;
     player.jumping = true;
   }
 }
-
 document.addEventListener("keydown", jump);
 document.addEventListener("touchstart", jump);
-
-// 🌌 BACKGROUND
-function drawStars() {
-  ctx.fillStyle = "white";
-  for (let s of stars) {
-    ctx.globalAlpha = Math.random();
-    ctx.fillRect(s.x, s.y, s.size, s.size);
-  }
-  ctx.globalAlpha = 1;
-}
-
-// 🔺 SPIKE
-function drawSpike(x) {
-  ctx.fillStyle = "red";
-  ctx.beginPath();
-  ctx.moveTo(x, 430);
-  ctx.lineTo(x + 15, 400);
-  ctx.lineTo(x + 30, 430);
-  ctx.fill();
-}
-
-// 👾 ENEMY
-function drawEnemy(e) {
-  ctx.fillStyle = "lime";
-  ctx.fillRect(e.x, 400, 40, 30);
-
-  ctx.fillStyle = "black";
-  ctx.font = "bold 10px Arial";
-  ctx.fillText(e.name, e.x + 3, 418);
-}
-
-// 🔫 BULLET
-function drawBullet(b) {
-  ctx.fillStyle = "yellow";
-  ctx.fillRect(b.x, b.y, 10, 4);
-}
 
 // 🔁 LOOP
 function loop() {
   ctx.clearRect(0, 0, 400, 500);
 
   if (running && player) {
-
-    drawStars();
 
     // gravity
     player.vy += 0.6;
@@ -151,33 +96,44 @@ function loop() {
       player.jumping = false;
     }
 
-    // 🔺 SPIKES (slow spawn)
-    spikeTimer++;
-    if (spikeTimer > 200) {
-      spikes.push({ x: 400 });
-      spikeTimer = 0;
-    }
+    // 🧠 PATTERN SPAWN
+    spawnTimer++;
 
-    // 👾 ENEMIES (GUARANTEED SPAWN)
-    enemyTimer++;
-    if (enemyTimer > 180) {
-      let name = Math.random() > 0.5 ? "SHAAN" : "RAJEEN";
+    if (spawnTimer > 140) {
+      let type = pattern[patternIndex];
 
-      enemies.push({
-        x: 400,
-        name: name,
-        shoot: 0
-      });
+      if (type === "spike") {
+        spikes.push({ x: 400 });
+      }
 
-      enemyTimer = 0;
+      if (type === "enemy") {
+        let name = Math.random() > 0.5 ? "SHAAN" : "RAJEEN";
+
+        enemies.push({
+          x: 400,
+          name: name,
+          shoot: 0
+        });
+      }
+
+      patternIndex++;
+      if (patternIndex >= pattern.length) patternIndex = 0;
+
+      spawnTimer = 0;
     }
 
     // 🔺 SPIKES
     for (let s of spikes) {
       s.x -= 3;
-      drawSpike(s.x);
 
-      if (s.x < player.x + 25 && s.x + 25 > player.x && player.y > 370) {
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      ctx.moveTo(s.x, 430);
+      ctx.lineTo(s.x + 15, 400);
+      ctx.lineTo(s.x + 30, 430);
+      ctx.fill();
+
+      if (s.x < player.x + 30 && s.x + 30 > player.x && player.y > 370) {
         running = false;
       }
     }
@@ -186,16 +142,22 @@ function loop() {
     // 👾 ENEMIES
     for (let e of enemies) {
       e.x -= 2;
-      drawEnemy(e);
 
-      // shoot bullets
+      ctx.fillStyle = "lime";
+      ctx.fillRect(e.x, 400, 40, 30);
+
+      ctx.fillStyle = "black";
+      ctx.font = "10px Arial";
+      ctx.fillText(e.name, e.x + 3, 418);
+
+      // 🔫 SHOOT
       e.shoot++;
-      if (e.shoot > 30) {
+      if (e.shoot > 40) {
         bullets.push({ x: e.x, y: 410 });
         e.shoot = 0;
       }
 
-      // jump on enemy
+      // jump on head
       if (
         player.x < e.x + 40 &&
         player.x + 30 > e.x &&
@@ -206,7 +168,7 @@ function loop() {
         player.vy = -10;
       }
 
-      // hit enemy
+      // hit
       if (
         player.x < e.x + 40 &&
         player.x + 30 > e.x &&
@@ -220,11 +182,13 @@ function loop() {
     // 🔫 BULLETS
     for (let b of bullets) {
       b.x -= 5;
-      drawBullet(b);
+
+      ctx.fillStyle = "yellow";
+      ctx.fillRect(b.x, b.y, 8, 4);
 
       if (
         b.x < player.x + 30 &&
-        b.x + 10 > player.x &&
+        b.x + 8 > player.x &&
         b.y > player.y &&
         b.y < player.y + 30
       ) {
@@ -247,8 +211,8 @@ function loop() {
 
   } else {
     ctx.fillStyle = "white";
-    ctx.font = "28px Arial";
-    ctx.fillText("GAME OVER", 110, 250);
+    ctx.font = "30px Arial";
+    ctx.fillText("GAME OVER", 100, 250);
   }
 
   requestAnimationFrame(loop);
