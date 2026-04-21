@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parkour Runner Game</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: Arial;
+      color: white;
+    }
+
+    canvas {
+      background: linear-gradient(#222, #000);
+      border: 2px solid white;
+    }
+
+    #score {
+      position: absolute;
+      top: 20px;
+      font-size: 20px;
+    }
+
+    #start {
+      position: absolute;
+      padding: 15px 25px;
+      background: #00ff88;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="score">Score: 0</div>
+<button id="start">Start Game</button>
+
+<canvas id="game" width="400" height="500"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let player, gravity, obstacles, score, gameRunning, speed;
+
+function resetGame() {
+  player = { x: 50, y: 400, w: 30, h: 30, vy: 0, jumping: false };
+  gravity = 0.6;
+  obstacles = [];
+  score = 0;
+  speed = 4;
+  gameRunning = true;
+}
+
+function drawPlayer() {
+  ctx.fillStyle = "cyan";
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+}
+
+function drawObstacles() {
+  ctx.fillStyle = "red";
+  for (let obs of obstacles) {
+    ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+  }
+}
+
+function updateObstacles() {
+  if (Math.random() < 0.02) {
+    obstacles.push({ x: 400, y: 420, w: 30, h: 30 });
+  }
+
+  for (let obs of obstacles) {
+    obs.x -= speed;
+
+    // collision
+    if (
+      player.x < obs.x + obs.w &&
+      player.x + player.w > obs.x &&
+      player.y < obs.y + obs.h &&
+      player.y + player.h > obs.y
+    ) {
+      gameRunning = false;
+    }
+  }
+
+  obstacles = obstacles.filter(o => o.x > -50);
+}
+
+function updatePlayer() {
+  player.vy += gravity;
+  player.y += player.vy;
+
+  if (player.y > 400) {
+    player.y = 400;
+    player.jumping = false;
+  }
+}
+
+function loop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (gameRunning) {
+    updatePlayer();
+    updateObstacles();
+
+    score++;
+    document.getElementById("score").innerText = "Score: " + score;
+
+    if (score % 200 === 0) speed += 0.5;
+  } else {
+    ctx.fillStyle = "white";
+    ctx.font = "30px Arial";
+    ctx.fillText("GAME OVER", 120, 250);
+  }
+
+  drawPlayer();
+  drawObstacles();
+
+  requestAnimationFrame(loop);
+}
+
+function jump() {
+  if (!player.jumping && gameRunning) {
+    player.vy = -12;
+    player.jumping = true;
+  }
+}
+
+// controls
+document.addEventListener("keydown", jump);
+document.addEventListener("touchstart", jump);
+
+document.getElementById("start").onclick = () => {
+  resetGame();
+  document.getElementById("start").style.display = "none";
+};
+
+loop();
+</script>
+
+</body>
+</html>
