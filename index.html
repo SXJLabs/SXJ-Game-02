@@ -12,22 +12,17 @@ body {
   color: white;
 }
 
-/* 🔷 TOP TECH BAR */
 #topbar {
-  background: #0a0a0a;
-  padding: 10px;
   display: flex;
   justify-content: space-between;
+  padding: 10px;
+  background: #0a0a0a;
   border-bottom: 1px solid #333;
 }
 
 #title {
+  color: cyan;
   font-weight: bold;
-  color: #00ffff;
-}
-
-#scoreBox {
-  color: white;
 }
 
 canvas {
@@ -48,7 +43,7 @@ button {
 
 <div id="topbar">
   <div id="title">SXJ RUNNER</div>
-  <div id="scoreBox">Score: <span id="score">0</span></div>
+  <div>Score: <span id="score">0</span></div>
 </div>
 
 <button onclick="startGame()">Start Game</button>
@@ -60,9 +55,13 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 let player, spikes, enemies, bullets, stars;
-let score, running, frame;
+let score, running;
 
-// 🚀 START GAME
+// ✅ GUARANTEED SPAWN TIMER
+let enemyTimer = 0;
+let spikeTimer = 0;
+
+// 🚀 START
 function startGame() {
   player = { x: 50, y: 400, vy: 0, jumping: false };
 
@@ -70,13 +69,15 @@ function startGame() {
   enemies = [];
   bullets = [];
 
+  enemyTimer = 0;
+  spikeTimer = 0;
+
   score = 0;
-  frame = 0;
   running = true;
 
   // stars
   stars = [];
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 60; i++) {
     stars.push({
       x: Math.random() * 400,
       y: Math.random() * 500,
@@ -85,7 +86,7 @@ function startGame() {
   }
 }
 
-// 🎮 JUMP
+// 🦘 JUMP
 function jump() {
   if (running && !player.jumping) {
     player.vy = -12;
@@ -96,7 +97,7 @@ function jump() {
 document.addEventListener("keydown", jump);
 document.addEventListener("touchstart", jump);
 
-// 🌌 STARS
+// 🌌 BACKGROUND
 function drawStars() {
   ctx.fillStyle = "white";
   for (let s of stars) {
@@ -119,7 +120,7 @@ function drawSpike(x) {
 // 👾 ENEMY
 function drawEnemy(e) {
   ctx.fillStyle = "lime";
-  ctx.fillRect(e.x, 400, 35, 30);
+  ctx.fillRect(e.x, 400, 40, 30);
 
   ctx.fillStyle = "black";
   ctx.font = "bold 10px Arial";
@@ -129,16 +130,14 @@ function drawEnemy(e) {
 // 🔫 BULLET
 function drawBullet(b) {
   ctx.fillStyle = "yellow";
-  ctx.fillRect(b.x, b.y, 8, 4);
+  ctx.fillRect(b.x, b.y, 10, 4);
 }
 
-// 🔁 GAME LOOP
+// 🔁 LOOP
 function loop() {
   ctx.clearRect(0, 0, 400, 500);
 
   if (running && player) {
-
-    frame++;
 
     drawStars();
 
@@ -152,22 +151,28 @@ function loop() {
       player.jumping = false;
     }
 
-    // 🔺 spikes (rare)
-    if (frame % 260 === 0) {
+    // 🔺 SPIKES (slow spawn)
+    spikeTimer++;
+    if (spikeTimer > 200) {
       spikes.push({ x: 400 });
+      spikeTimer = 0;
     }
 
-    // 👾 enemies (EARLY + VISIBLE)
-    if (frame > 100 && frame % 220 === 0) {
+    // 👾 ENEMIES (GUARANTEED SPAWN)
+    enemyTimer++;
+    if (enemyTimer > 180) {
       let name = Math.random() > 0.5 ? "SHAAN" : "RAJEEN";
+
       enemies.push({
         x: 400,
         name: name,
         shoot: 0
       });
+
+      enemyTimer = 0;
     }
 
-    // 🔺 spikes logic
+    // 🔺 SPIKES
     for (let s of spikes) {
       s.x -= 3;
       drawSpike(s.x);
@@ -176,27 +181,26 @@ function loop() {
         running = false;
       }
     }
-
     spikes = spikes.filter(s => s.x > -50);
 
-    // 👾 enemies logic
+    // 👾 ENEMIES
     for (let e of enemies) {
       e.x -= 2;
       drawEnemy(e);
 
-      // 🔫 SHOOTING
+      // shoot bullets
       e.shoot++;
       if (e.shoot > 30) {
         bullets.push({ x: e.x, y: 410 });
         e.shoot = 0;
       }
 
-      // 🦘 jump on head
+      // jump on enemy
       if (
-        player.x < e.x + 35 &&
+        player.x < e.x + 40 &&
         player.x + 30 > e.x &&
         player.y + 30 < 400 &&
-        player.y + 30 > 370
+        player.y + 30 > 360
       ) {
         e.dead = true;
         player.vy = -10;
@@ -204,31 +208,29 @@ function loop() {
 
       // hit enemy
       if (
-        player.x < e.x + 35 &&
+        player.x < e.x + 40 &&
         player.x + 30 > e.x &&
         player.y > 370
       ) {
         running = false;
       }
     }
-
     enemies = enemies.filter(e => !e.dead && e.x > -50);
 
-    // 🔫 bullets
+    // 🔫 BULLETS
     for (let b of bullets) {
       b.x -= 5;
       drawBullet(b);
 
       if (
         b.x < player.x + 30 &&
-        b.x + 8 > player.x &&
+        b.x + 10 > player.x &&
         b.y > player.y &&
         b.y < player.y + 30
       ) {
         running = false;
       }
     }
-
     bullets = bullets.filter(b => b.x > -10);
 
     // 🔴 PLAYER
