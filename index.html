@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Runner Game</title>
+  <title>SXJ Runner</title>
 
   <style>
     body {
@@ -18,12 +18,14 @@
       display: block;
       margin: auto;
       margin-top: 20px;
+      border: 2px solid white;
     }
 
     button {
       padding: 12px 20px;
       font-size: 18px;
       margin-top: 10px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -79,14 +81,18 @@ function loop() {
       player.jumping = false;
     }
 
-    // spawn obstacles
-    if (Math.random() < 0.02) {
+    // easier obstacle spawn (IMPORTANT)
+    if (Math.random() < 0.008) {
       obstacles.push({ x: 400 });
     }
 
-    // draw player
-    ctx.fillStyle = "cyan";
+    // draw player (SXJ CHARACTER)
+    ctx.fillStyle = "#00bcd4";
     ctx.fillRect(player.x, player.y, 30, 30);
+
+    ctx.fillStyle = "black";
+    ctx.font = "bold 14px Arial";
+    ctx.fillText("SXJ", player.x + 4, player.y + 20);
 
     // obstacles
     ctx.fillStyle = "red";
@@ -97,7 +103,7 @@ function loop() {
 
       ctx.fillRect(o.x, 400, 30, 30);
 
-      // collision FIXED (more accurate)
+      // collision
       if (
         o.x < player.x + 30 &&
         o.x + 30 > player.x &&
