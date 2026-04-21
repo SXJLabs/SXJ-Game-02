@@ -1,32 +1,30 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SXJ Runner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SXJ Space Runner</title>
 
-  <style>
-    body {
-      margin: 0;
-      background: #111;
-      color: white;
-      text-align: center;
-      font-family: Arial;
-    }
+<style>
+body {
+  margin: 0;
+  background: black;
+  color: white;
+  text-align: center;
+  font-family: Arial;
+}
 
-    canvas {
-      background: #000;
-      display: block;
-      margin: auto;
-      margin-top: 20px;
-      border: 2px solid white;
-    }
+canvas {
+  display: block;
+  margin: auto;
+  border: 2px solid white;
+}
 
-    button {
-      padding: 12px 20px;
-      font-size: 18px;
-      margin-top: 10px;
-    }
-  </style>
+button {
+  padding: 12px 20px;
+  margin: 10px;
+  font-size: 16px;
+}
+</style>
 </head>
 
 <body>
@@ -40,18 +38,33 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-let player, obstacles, score, running, frame;
+let player, spikes, enemies, bullets, stars;
+let score, running, frame;
 
 function startGame() {
   player = { x: 50, y: 400, vy: 0, jumping: false };
-  obstacles = [];
+
+  spikes = [];
+  enemies = [];
+  bullets = [];
+
   score = 0;
   frame = 0;
   running = true;
+
+  // stars
+  stars = [];
+  for (let i = 0; i < 60; i++) {
+    stars.push({
+      x: Math.random() * 400,
+      y: Math.random() * 500,
+      size: Math.random() * 2
+    });
+  }
 }
 
 function jump() {
-  if (running && player && !player.jumping) {
+  if (running && !player.jumping) {
     player.vy = -12;
     player.jumping = true;
   }
@@ -60,14 +73,40 @@ function jump() {
 document.addEventListener("keydown", jump);
 document.addEventListener("touchstart", jump);
 
+// 🌌 draw stars
+function drawStars() {
+  ctx.fillStyle = "white";
+  for (let s of stars) {
+    ctx.globalAlpha = Math.random();
+    ctx.fillRect(s.x, s.y, s.size, s.size);
+  }
+  ctx.globalAlpha = 1;
+}
+
+// 🔺 spike
 function drawSpike(x, y) {
   ctx.fillStyle = "red";
   ctx.beginPath();
   ctx.moveTo(x, y + 30);
   ctx.lineTo(x + 15, y);
   ctx.lineTo(x + 30, y + 30);
-  ctx.closePath();
   ctx.fill();
+}
+
+// 👾 enemy
+function drawEnemy(e) {
+  ctx.fillStyle = "purple";
+  ctx.fillRect(e.x, 380, 30, 30);
+
+  ctx.fillStyle = "white";
+  ctx.font = "10px Arial";
+  ctx.fillText(e.name, e.x, 375);
+}
+
+// 🔫 bullet
+function drawBullet(b) {
+  ctx.fillStyle = "yellow";
+  ctx.fillRect(b.x, b.y, 6, 3);
 }
 
 function loop() {
@@ -76,6 +115,9 @@ function loop() {
   if (running && player) {
 
     frame++;
+
+    // 🌌 background
+    drawStars();
 
     // gravity
     player.vy += 0.6;
@@ -87,45 +129,99 @@ function loop() {
       player.jumping = false;
     }
 
-    // 🔥 MUCH LESS FREQUENT SPIKES
-    if (frame % 180 === 0) {
-      obstacles.push({ x: 400 });
+    // 🔺 spikes (rare)
+    if (frame % 220 === 0) {
+      spikes.push({ x: 400 });
     }
 
-    // PLAYER (RED BOX)
-    ctx.fillStyle = "red";
-    ctx.fillRect(player.x, player.y, 30, 30);
+    // 👾 enemies (very spaced)
+    if (frame % 300 === 0) {
+      let name = Math.random() > 0.5 ? "SHAAN" : "RAJEEN";
+      enemies.push({ x: 400, name: name, shootTimer: 0 });
+    }
 
-    // SXJ TEXT (WHITE, FIXED)
-    ctx.fillStyle = "white";
-    ctx.font = "bold 14px Arial";
-    ctx.fillText("SXJ", player.x + 5, player.y + 20);
+    // 🔺 draw spikes
+    for (let s of spikes) {
+      s.x -= 3;
+      drawSpike(s.x, 400);
 
-    // SPIKES
-    for (let i = 0; i < obstacles.length; i++) {
-      let o = obstacles[i];
-      o.x -= 3;
-
-      drawSpike(o.x, 400);
-
-      // collision (fair spike hitbox)
       if (
-        o.x < player.x + 25 &&
-        o.x + 25 > player.x &&
+        s.x < player.x + 25 &&
+        s.x + 25 > player.x &&
         player.y > 370
       ) {
         running = false;
       }
     }
 
-    obstacles = obstacles.filter(o => o.x > -50);
+    spikes = spikes.filter(s => s.x > -50);
+
+    // 👾 enemies
+    for (let e of enemies) {
+      e.x -= 2;
+
+      drawEnemy(e);
+
+      // shooting
+      e.shootTimer++;
+      if (e.shootTimer % 60 === 0) {
+        bullets.push({ x: e.x, y: 395 });
+      }
+
+      // jump on enemy (kill)
+      if (
+        player.x < e.x + 30 &&
+        player.x + 30 > e.x &&
+        player.y + 30 < 400 &&
+        player.y + 30 > 370
+      ) {
+        e.dead = true;
+        player.vy = -10; // bounce
+      }
+
+      // collision
+      if (
+        player.x < e.x + 30 &&
+        player.x + 30 > e.x &&
+        player.y > 370
+      ) {
+        running = false;
+      }
+    }
+
+    enemies = enemies.filter(e => !e.dead && e.x > -50);
+
+    // 🔫 bullets
+    for (let b of bullets) {
+      b.x -= 5;
+      drawBullet(b);
+
+      if (
+        b.x < player.x + 30 &&
+        b.x + 5 > player.x &&
+        b.y > player.y &&
+        b.y < player.y + 30
+      ) {
+        running = false;
+      }
+    }
+
+    bullets = bullets.filter(b => b.x > -10);
+
+    // 🔴 player
+    ctx.fillStyle = "red";
+    ctx.fillRect(player.x, player.y, 30, 30);
+
+    ctx.fillStyle = "white";
+    ctx.font = "bold 14px Arial";
+    ctx.fillText("SXJ", player.x + 5, player.y + 20);
 
     score++;
     document.getElementById("score").innerText = score;
 
   } else {
     ctx.fillStyle = "white";
-    ctx.font = "30px Arial";
+    ctx.font = "28px Arial";
     ctx.fillText("GAME OVER", 110, 250);
   }
 
