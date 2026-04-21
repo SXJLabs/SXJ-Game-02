@@ -60,6 +60,17 @@ function jump() {
 document.addEventListener("keydown", jump);
 document.addEventListener("touchstart", jump);
 
+function drawSpike(x, y) {
+  ctx.fillStyle = "red";
+
+  ctx.beginPath();
+  ctx.moveTo(x, y + 30);
+  ctx.lineTo(x + 15, y);
+  ctx.lineTo(x + 30, y + 30);
+  ctx.closePath();
+  ctx.fill();
+}
+
 function loop() {
   ctx.clearRect(0, 0, 400, 500);
 
@@ -77,33 +88,31 @@ function loop() {
       player.jumping = false;
     }
 
-    // 🔥 MUCH EASIER OBSTACLES (FIXED)
-    if (frame % 140 === 0) {
+    // 🟢 EASY SPAWN (one after another, not spam)
+    if (frame % 160 === 0) {
       obstacles.push({ x: 400 });
     }
 
-    // player box
+    // player
     ctx.fillStyle = "#00bcd4";
     ctx.fillRect(player.x, player.y, 30, 30);
 
-    // SXJ text FIXED (centered properly)
-    ctx.fillStyle = "black";
-    ctx.font = "bold 12px Arial";
-    ctx.fillText("SXJ", player.x + 5, player.y + 20);
+    // FIXED SXJ TEXT (always visible now)
+    ctx.fillStyle = "white";
+    ctx.font = "bold 14px Arial";
+    ctx.fillText("SXJ", player.x + 4, player.y + 20);
 
-    // obstacles
-    ctx.fillStyle = "red";
-
+    // spikes instead of boxes
     for (let i = 0; i < obstacles.length; i++) {
       let o = obstacles[i];
-      o.x -= 3.5; // slower = easier gameplay
+      o.x -= 3; // slower = easier
 
-      ctx.fillRect(o.x, 400, 30, 30);
+      drawSpike(o.x, 400);
 
-      // collision (slightly forgiving)
+      // collision (fair hitbox for spike)
       if (
-        o.x < player.x + 28 &&
-        o.x + 28 > player.x &&
+        o.x < player.x + 25 &&
+        o.x + 25 > player.x &&
         player.y > 370
       ) {
         running = false;
@@ -112,7 +121,6 @@ function loop() {
 
     obstacles = obstacles.filter(o => o.x > -50);
 
-    // score
     score++;
     document.getElementById("score").innerText = score;
 
