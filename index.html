@@ -8,33 +8,50 @@
 body {
   margin: 0;
   background: black;
-  color: white;
   font-family: Arial;
-  text-align: center;
+  color: white;
 }
 
+/* TOP BAR */
 #topbar {
   display: flex;
   justify-content: space-between;
   padding: 10px;
   background: #111;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 10;
 }
 
+/* CANVAS */
 canvas {
   display: block;
-  margin: auto;
+  margin: 60px auto 0 auto;
   border: 2px solid white;
+  background: black;
 }
 
-/* 🎮 CONTROLS */
+/* CONTROLS */
 #controls {
-  margin-top: 10px;
+  position: fixed;
+  bottom: 15px;
+  width: 100%;
+  text-align: center;
+  z-index: 20;
 }
 
 button {
-  padding: 10px 15px;
+  padding: 12px 14px;
   margin: 5px;
   font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background: #222;
+  color: white;
+}
+button:active {
+  background: #444;
 }
 </style>
 </head>
@@ -52,7 +69,7 @@ button {
   <button onclick="moveLeft()">⬅️</button>
   <button onclick="jump()">🦘</button>
   <button onclick="moveRight()">➡️</button>
-  <button onmousedown="shieldOn()" onmouseup="shieldOff()" ontouchstart="shieldOn()" ontouchend="shieldOff()">🛡️ Shield</button>
+  <button onclick="toggleShield()">🛡️</button>
 </div>
 
 <script>
@@ -60,31 +77,34 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 let player, spikes, enemies, bullets, stars;
-let score, running;
+let score = 0;
+let running = true;
 
-let spawnTimer = 0;
+let timer = 0;
 let patternIndex = 0;
 
+let shieldActive = false;
+
+// pattern system
 const pattern = ["spike", "enemy", "enemy", "spike"];
 
+// START
 function startGame() {
   player = {
     x: 50,
     y: 400,
     vy: 0,
     jumping: false,
-    shield: false,
     shieldMeter: 100
   };
 
   spikes = [];
   enemies = [];
   bullets = [];
-
   score = 0;
   running = true;
 
-  spawnTimer = 0;
+  timer = 0;
   patternIndex = 0;
 
   stars = [];
@@ -92,47 +112,52 @@ function startGame() {
     stars.push({
       x: Math.random() * 400,
       y: Math.random() * 500,
-      size: Math.random() * 2
+      s: Math.random() * 2
     });
   }
 }
 
-// controls
+// CONTROLS
 function jump() {
-  if (!player.jumping) {
+  if (!player.jumping && running) {
     player.vy = -12;
     player.jumping = true;
   }
 }
-function moveLeft() { player.x -= 20; }
-function moveRight() { player.x += 20; }
 
-function shieldOn() {
-  if (player.shieldMeter > 0) player.shield = true;
-}
-function shieldOff() {
-  player.shield = false;
+function moveLeft() {
+  player.x -= 20;
 }
 
-// stars
+function moveRight() {
+  player.x += 20;
+}
+
+function toggleShield() {
+  if (player.shieldMeter > 0) {
+    shieldActive = !shieldActive;
+  }
+}
+
+// DRAW HELPERS
 function drawStars() {
   ctx.fillStyle = "white";
   for (let s of stars) {
     ctx.globalAlpha = Math.random();
-    ctx.fillRect(s.x, s.y, s.size, s.size);
+    ctx.fillRect(s.x, s.y, s.s, s.s);
   }
   ctx.globalAlpha = 1;
 }
 
-// loop
+// LOOP
 function loop() {
   ctx.clearRect(0, 0, 400, 500);
 
-  if (running && player) {
+  if (running) {
 
     drawStars();
 
-    // gravity
+    // GRAVITY
     player.vy += 0.6;
     player.y += player.vy;
 
@@ -142,35 +167,41 @@ function loop() {
       player.jumping = false;
     }
 
-    // shield meter
-    if (player.shield) {
-      player.shieldMeter -= 0.5;
+    // SHIELD SYSTEM
+    if (shieldActive) {
+      player.shieldMeter -= 0.6;
       if (player.shieldMeter <= 0) {
-        player.shield = false;
         player.shieldMeter = 0;
+        shieldActive = false;
       }
     } else {
-      player.shieldMeter += 0.2;
+      player.shieldMeter += 0.3;
       if (player.shieldMeter > 100) player.shieldMeter = 100;
     }
 
-    // spawn
-    spawnTimer++;
-    if (spawnTimer > 180) {
+    // SPAWN SYSTEM (CONTROLLED)
+    timer++;
+    if (timer > 150) {
+
       let type = pattern[patternIndex];
 
-      if (type === "spike") spikes.push({ x: 400 });
+      if (type === "spike") {
+        spikes.push({ x: 400 });
+      }
 
       if (type === "enemy") {
-        let name = Math.random() > 0.5 ? "SHAAN" : "RAJEEN";
-        enemies.push({ x: 400, name: name, shoot: 0 });
+        enemies.push({
+          x: 400,
+          name: Math.random() > 0.5 ? "SHAAN" : "RAJEEN",
+          shoot: 0
+        });
       }
 
       patternIndex = (patternIndex + 1) % pattern.length;
-      spawnTimer = 0;
+      timer = 0;
     }
 
-    // spikes
+    // SPIKES
     for (let s of spikes) {
       s.x -= 3;
 
@@ -181,12 +212,16 @@ function loop() {
       ctx.lineTo(s.x + 30, 430);
       ctx.fill();
 
-      if (!player.shield && s.x < player.x + 30 && s.x + 30 > player.x && player.y > 370) {
+      if (!shieldActive &&
+          s.x < player.x + 30 &&
+          s.x + 30 > player.x &&
+          player.y > 370) {
         running = false;
       }
     }
+    spikes = spikes.filter(s => s.x > -50);
 
-    // enemies
+    // ENEMIES
     for (let e of enemies) {
       e.x -= 2;
 
@@ -197,10 +232,10 @@ function loop() {
       ctx.font = "10px Arial";
       ctx.fillText(e.name, e.x + 3, 418);
 
-      // only SHAAN shoots
+      // SHAAN SHOOTS
       if (e.name === "SHAAN") {
         e.shoot++;
-        if (e.shoot > 100) {
+        if (e.shoot > 90) {
           bullets.push({ x: e.x, y: 410 });
           e.shoot = 0;
         }
@@ -218,33 +253,33 @@ function loop() {
       }
 
       // collision
-      if (!player.shield &&
-        player.x < e.x + 40 &&
-        player.x + 30 > e.x &&
-        player.y > 370
-      ) {
+      if (!shieldActive &&
+          player.x < e.x + 40 &&
+          player.x + 30 > e.x &&
+          player.y > 370) {
         running = false;
       }
     }
+    enemies = enemies.filter(e => !e.dead && e.x > -50);
 
-    // bullets
+    // BULLETS
     for (let b of bullets) {
       b.x -= 4;
 
       ctx.fillStyle = "yellow";
       ctx.fillRect(b.x, b.y, 8, 4);
 
-      if (!player.shield &&
-        b.x < player.x + 30 &&
-        b.x + 8 > player.x &&
-        b.y > player.y &&
-        b.y < player.y + 30
-      ) {
+      if (!shieldActive &&
+          b.x < player.x + 30 &&
+          b.x + 8 > player.x &&
+          b.y > player.y &&
+          b.y < player.y + 30) {
         running = false;
       }
     }
+    bullets = bullets.filter(b => b.x > -10);
 
-    // player
+    // PLAYER
     ctx.fillStyle = "red";
     ctx.fillRect(player.x, player.y, 30, 30);
 
@@ -252,16 +287,16 @@ function loop() {
     ctx.font = "bold 14px Arial";
     ctx.fillText("SXJ", player.x + 5, player.y + 20);
 
-    // shield visual
-    if (player.shield) {
+    // shield glow
+    if (shieldActive) {
       ctx.strokeStyle = "cyan";
       ctx.lineWidth = 3;
-      ctx.strokeRect(player.x - 3, player.y - 3, 36, 36);
+      ctx.strokeRect(player.x - 4, player.y - 4, 38, 38);
     }
 
     // shield bar
     ctx.fillStyle = "cyan";
-    ctx.fillRect(10, 460, player.shieldMeter * 2, 10);
+    ctx.fillRect(10, 470, player.shieldMeter * 2, 8);
 
     // score
     score++;
