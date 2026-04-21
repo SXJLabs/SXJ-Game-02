@@ -22,7 +22,6 @@ canvas {
 button {
   padding: 12px 20px;
   margin: 10px;
-  font-size: 16px;
 }
 </style>
 </head>
@@ -73,7 +72,7 @@ function jump() {
 document.addEventListener("keydown", jump);
 document.addEventListener("touchstart", jump);
 
-// 🌌 draw stars
+// 🌌 stars
 function drawStars() {
   ctx.fillStyle = "white";
   for (let s of stars) {
@@ -84,29 +83,29 @@ function drawStars() {
 }
 
 // 🔺 spike
-function drawSpike(x, y) {
+function drawSpike(x) {
   ctx.fillStyle = "red";
   ctx.beginPath();
-  ctx.moveTo(x, y + 30);
-  ctx.lineTo(x + 15, y);
-  ctx.lineTo(x + 30, y + 30);
+  ctx.moveTo(x, 430);
+  ctx.lineTo(x + 15, 400);
+  ctx.lineTo(x + 30, 430);
   ctx.fill();
 }
 
-// 👾 enemy
+// 👾 enemy with label
 function drawEnemy(e) {
   ctx.fillStyle = "purple";
-  ctx.fillRect(e.x, 380, 30, 30);
+  ctx.fillRect(e.x, 400, 35, 30);
 
   ctx.fillStyle = "white";
-  ctx.font = "10px Arial";
-  ctx.fillText(e.name, e.x, 375);
+  ctx.font = "bold 10px Arial";
+  ctx.fillText(e.name, e.x + 2, 418);
 }
 
 // 🔫 bullet
 function drawBullet(b) {
   ctx.fillStyle = "yellow";
-  ctx.fillRect(b.x, b.y, 6, 3);
+  ctx.fillRect(b.x, b.y, 8, 4);
 }
 
 function loop() {
@@ -116,7 +115,6 @@ function loop() {
 
     frame++;
 
-    // 🌌 background
     drawStars();
 
     // gravity
@@ -130,58 +128,59 @@ function loop() {
     }
 
     // 🔺 spikes (rare)
-    if (frame % 220 === 0) {
+    if (frame % 250 === 0) {
       spikes.push({ x: 400 });
     }
 
-    // 👾 enemies (very spaced)
-    if (frame % 300 === 0) {
+    // 👾 enemies (clear spacing)
+    if (frame % 350 === 0) {
       let name = Math.random() > 0.5 ? "SHAAN" : "RAJEEN";
-      enemies.push({ x: 400, name: name, shootTimer: 0 });
+      enemies.push({
+        x: 400,
+        name: name,
+        shootCooldown: 0
+      });
     }
 
-    // 🔺 draw spikes
+    // spikes
     for (let s of spikes) {
       s.x -= 3;
-      drawSpike(s.x, 400);
+      drawSpike(s.x);
 
-      if (
-        s.x < player.x + 25 &&
-        s.x + 25 > player.x &&
-        player.y > 370
-      ) {
+      if (s.x < player.x + 25 && s.x + 25 > player.x && player.y > 370) {
         running = false;
       }
     }
 
     spikes = spikes.filter(s => s.x > -50);
 
-    // 👾 enemies
+    // enemies
     for (let e of enemies) {
       e.x -= 2;
 
       drawEnemy(e);
 
-      // shooting
-      e.shootTimer++;
-      if (e.shootTimer % 60 === 0) {
-        bullets.push({ x: e.x, y: 395 });
+      // 🔫 shooting (REAL BULLETS)
+      e.shootCooldown++;
+      if (e.shootCooldown > 40) { // about 1 bullet/sec
+        bullets.push({ x: e.x, y: 410 });
+        e.shootCooldown = 0;
       }
 
-      // jump on enemy (kill)
+      // 🦘 jump on head = kill
       if (
-        player.x < e.x + 30 &&
+        player.x < e.x + 35 &&
         player.x + 30 > e.x &&
         player.y + 30 < 400 &&
         player.y + 30 > 370
       ) {
         e.dead = true;
-        player.vy = -10; // bounce
+        player.vy = -10;
       }
 
-      // collision
+      // hit enemy directly = lose
       if (
-        player.x < e.x + 30 &&
+        player.x < e.x + 35 &&
         player.x + 30 > e.x &&
         player.y > 370
       ) {
@@ -191,14 +190,14 @@ function loop() {
 
     enemies = enemies.filter(e => !e.dead && e.x > -50);
 
-    // 🔫 bullets
+    // bullets
     for (let b of bullets) {
       b.x -= 5;
       drawBullet(b);
 
       if (
         b.x < player.x + 30 &&
-        b.x + 5 > player.x &&
+        b.x + 8 > player.x &&
         b.y > player.y &&
         b.y < player.y + 30
       ) {
