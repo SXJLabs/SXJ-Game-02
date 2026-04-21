@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>SXJ Runner</title>
 
 <style>
@@ -9,7 +9,6 @@ body {
   margin: 0;
   background: black;
   font-family: Arial;
-  color: white;
   overflow: hidden;
   touch-action: none;
 }
@@ -20,6 +19,7 @@ body {
   justify-content: space-between;
   padding: 10px;
   background: #111;
+  color: white;
   position: fixed;
   top: 0;
   width: 100%;
@@ -33,29 +33,46 @@ canvas {
   border: 2px solid white;
   width: 100vw;
   max-width: 400px;
-  height: auto;
 }
 
 /* CONTROLS */
-#controls {
+#jumpBtn {
   position: fixed;
-  bottom: 35px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  gap: 10px;
+  bottom: 40px;
+  left: 20px;
+  padding: 18px;
+  font-size: 18px;
+  border-radius: 14px;
+  background: rgba(50,50,50,0.9);
+  color: white;
   z-index: 20;
-  flex-wrap: wrap;
 }
 
-button {
-  padding: 16px 18px;
+#shieldBtn {
+  position: fixed;
+  bottom: 40px;
+  right: 20px;
+  padding: 18px;
   font-size: 18px;
-  border: none;
   border-radius: 14px;
-  background: rgba(40,40,40,0.9);
+  background: rgba(50,50,50,0.9);
   color: white;
-  min-width: 70px;
+  z-index: 20;
+}
+
+/* START BUTTON (GAME OVER ONLY) */
+#startBtn {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px 30px;
+  font-size: 20px;
+  border-radius: 12px;
+  background: white;
+  color: black;
+  display: none;
+  z-index: 30;
 }
 </style>
 </head>
@@ -69,12 +86,10 @@ button {
 
 <canvas id="game" width="400" height="500"></canvas>
 
-<div id="controls">
-  <button onclick="moveLeft()">⬅️</button>
-  <button onclick="jump()">🦘</button>
-  <button onclick="moveRight()">➡️</button>
-  <button onclick="toggleShield()">🛡️</button>
-</div>
+<button id="jumpBtn" onclick="jump()">JUMP</button>
+<button id="shieldBtn" onclick="toggleShield()">SHIELD</button>
+
+<button id="startBtn" onclick="startGame()">START</button>
 
 <script>
 const canvas = document.getElementById("game");
@@ -82,14 +97,13 @@ const ctx = canvas.getContext("2d");
 
 let player, spikes, enemies, bullets, stars;
 let score = 0;
-let running = true;
+let running = false;
 
 let timer = 0;
 let patternIndex = 0;
 
 let shieldActive = false;
 
-// pattern system
 const pattern = ["spike", "enemy", "enemy", "spike"];
 
 // START GAME
@@ -111,8 +125,10 @@ function startGame() {
 
   timer = 0;
   patternIndex = 0;
+  shieldActive = false;
 
-  // stars
+  document.getElementById("startBtn").style.display = "none";
+
   stars = [];
   for (let i = 0; i < 60; i++) {
     stars.push({
@@ -125,18 +141,10 @@ function startGame() {
 
 // CONTROLS
 function jump() {
-  if (!player.jumping && running) {
+  if (running && !player.jumping) {
     player.vy = -12;
     player.jumping = true;
   }
-}
-
-function moveLeft() {
-  player.x -= 20;
-}
-
-function moveRight() {
-  player.x += 20;
 }
 
 function toggleShield() {
@@ -159,7 +167,7 @@ function drawStars() {
 function loop() {
   ctx.clearRect(0, 0, 400, 500);
 
-  if (running && player) {
+  if (running) {
 
     drawStars();
 
@@ -207,7 +215,7 @@ function loop() {
       timer = 0;
     }
 
-    // SPIKES
+    // spikes
     for (let s of spikes) {
       s.x -= 3;
 
@@ -222,12 +230,12 @@ function loop() {
           s.x < player.x + 30 &&
           s.x + 30 > player.x &&
           player.y > 370) {
-        running = false;
+        gameOver();
       }
     }
     spikes = spikes.filter(s => s.x > -50);
 
-    // ENEMIES
+    // enemies
     for (let e of enemies) {
       e.x -= 2;
 
@@ -238,7 +246,6 @@ function loop() {
       ctx.font = "10px Arial";
       ctx.fillText(e.name, e.x + 3, 418);
 
-      // SHAAN shoots only
       if (e.name === "SHAAN") {
         e.shoot++;
         if (e.shoot > 90) {
@@ -247,7 +254,6 @@ function loop() {
         }
       }
 
-      // jump kill
       if (
         player.x < e.x + 40 &&
         player.x + 30 > e.x &&
@@ -258,17 +264,16 @@ function loop() {
         player.vy = -10;
       }
 
-      // collision
       if (!shieldActive &&
           player.x < e.x + 40 &&
           player.x + 30 > e.x &&
           player.y > 370) {
-        running = false;
+        gameOver();
       }
     }
     enemies = enemies.filter(e => !e.dead && e.x > -50);
 
-    // BULLETS
+    // bullets
     for (let b of bullets) {
       b.x -= 4;
 
@@ -280,12 +285,12 @@ function loop() {
           b.x + 8 > player.x &&
           b.y > player.y &&
           b.y < player.y + 30) {
-        running = false;
+        gameOver();
       }
     }
     bullets = bullets.filter(b => b.x > -10);
 
-    // PLAYER
+    // player
     ctx.fillStyle = "red";
     ctx.fillRect(player.x, player.y, 30, 30);
 
@@ -293,7 +298,7 @@ function loop() {
     ctx.font = "bold 14px Arial";
     ctx.fillText("SXJ", player.x + 5, player.y + 20);
 
-    // shield glow
+    // shield effect
     if (shieldActive) {
       ctx.strokeStyle = "cyan";
       ctx.lineWidth = 3;
@@ -315,6 +320,12 @@ function loop() {
   }
 
   requestAnimationFrame(loop);
+}
+
+// GAME OVER FUNCTION
+function gameOver() {
+  running = false;
+  document.getElementById("startBtn").style.display = "block";
 }
 
 startGame();
